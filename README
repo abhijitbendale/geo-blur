@@ -1,0 +1,86 @@
+The given code implements geometric blur descriptor and performs SVM-KNN on Caltech 101. 
+
+1)Description of Geometric Blur descriptor can be found in 
+"Geometric Blur for template matching", Alex Berg, Jitendra Malik, CVPR 2001
+2)Description of SVM-KNN can be found in 
+"SVM-KNN: Discriminative Nearest Neighbor Classification for Visual Category Recognition", 
+H. Zhang, A. C. Berg, M. Maire, J. Malik. CVPR 2006 
+3)L. Fei-Fei, R. Fergus and P. Perona. Learning generative visual models
+from few training examples: an incremental Bayesian approach tested on
+101 object categories. IEEE. CVPR 2004, Workshop on Generative-Model
+Based Vision. 2004 (Mentioned here for citation purpose)
+4)David G. Lowe, "Distinctive image features from scale-invariant keypoints," 
+International Journal of Computer Vision, 60, 2 (2004), pp. 91-110
+
+To run this code you need:
+--Caltech 101 dataset
+--Python libraries such as PIL, NumPy, SciPy, PyML 
+--You also need David Lowe's SIFT code for keypoint detection. 
+(Other keypoint detection schemes could also have been used. 
+SIFT was used for easy code availability and integration)
+
+List of Files included:
+create_train_test.py : This files creates list of training and testing files
+create_descriptor.py : This file creates geometric blur descriptor for given images 
+and saves them in <filename>.decp file
+utility_functions.py: This file contains all the utility functions used in this entire
+code directory
+gb_params.py: This file contains some constants used in utility_functions.py
+classify.py: This file implements SVM-KNN from based on geometric blur descriptor for caltech 101
+
+
+Following is the brief description of the idea of the code
+
+Geometric Blur part:
+keypoint detection -  SIFT code of David Lowe
+4 channels are used overall. Each channel is a sobel filter at various orientation 
+  (various other boundary detection techniques could have been used)
+4 blurs are used at varying standard deviation
+24 points are sampled around the keypoint are sampled at 4 radii
+Total no of points in the descriptor = 24 samples * 4 radii * 4 channels 
+= (x,y) +  384 points per keypoint  = 386 points
+Distance measure in Algorithm B is implemented from SVM-KNN 
+paper given in Section 4.4 for distance measure
+
+SVM-KNN part:
+15 training samples from 101 categories are chosen at random from Caltech 101
+Hence we have 15*101 = 1515 training images
+Remaining images are used as testing images
+
+For each testing sample:
+    Calculate the distance between testing image and all the training image
+    Choose K nearest neighbors (we are considering K = 30 for our experiments)
+    if all K neighbours have same class label
+       the given test image has the same class
+    else 
+    	 perform multi-class SVM based on K-nearest neighbours and find class label for given test image
+
+Perform error analysis for given iteration
+
+This method can be carried out number of times for different sets of training images
+Perform more iterations if needed
+
+Code:
+
+Example of Use:
+Get Caltech 101 dataset and untar it
+
+Create training and testing sets
+python create_train_test.py <path of caltech 101 folder> <no of training images per object category> 
+This program creates
+     train.lst =  list of training images
+     test.lst = list of testing images
+
+Compute geometric blur descriptor for list of training images around points defined by SIFT keypoint detection
+Get geometric blur descriptor around all the points for list of training images 
+and save them in the same directory as the respective image
+python create_descripto0r.py <list of training images> <path of SIFT binary of David Lowe>
+
+Classification
+For the list of test images, run SVM-KN
+python classify.py <path of test.lst> <path of train.lst> <path of SIFT binary of David Lowe>
+This process creates a classlabel file called test.clslbl which contains image_name SVM-KNN_category
+
+Error Evaluation
+python evaluation.py <path of test.clslbl>
+This file creates a file containing confusion matrix called test.cnfmtx and a correctness_rate_graph.png 
